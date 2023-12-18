@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -64,15 +64,18 @@ contract NFTMarketplace is ERC721, Ownable, IERC721Receiver {
         emit NFTSold(tokenId, msg.sender, price);
     }
 
-    function cancelSale(uint256 tokenId) external {
-        require(ownerOf(tokenId) == msg.sender, "You do not own this NFT");
-        require(nftsForSale[tokenId], "NFT is not listed for sale");
+  function cancelSale(uint256 tokenId) external {
+    address owner = ownerOf(tokenId);
 
-        // Remove listing
-        nftsForSale[tokenId] = false;
+    require(owner == msg.sender, "You do not own this NFT");
+    require(nftsForSale[tokenId], "NFT is not listed for sale");
 
-        emit NFTSaleCancelled(tokenId);
+    // Remove listing
+    nftsForSale[tokenId] = false;
+
+    emit NFTSaleCancelled(tokenId);
     }
+
 
     // Implement onERC721Received
     function onERC721Received(address, address, uint256, bytes calldata) external pure override returns (bytes4) {
