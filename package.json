@@ -1,8 +1,6 @@
 {
   "name": "hardhat-project",
   "devDependencies": {
-    "@nomiclabs/hardhat-ethers": "^2.2.3",
-    "@nomiclabs/hardhat-waffle": "^2.0.6",
     "chai": "^4.3.10",
     "ethereum-waffle": "^4.0.10",
     "ethers": "^5.7.2",
@@ -11,6 +9,7 @@
     "react-scripts": "^5.0.1"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^4.3.2"
+    "@openzeppelin/contracts": "^4.3.2",
+    "ipfs-core": "^0.18.1"
   }
 }

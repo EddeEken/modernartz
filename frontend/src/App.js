@@ -1,9 +1,11 @@
 import Marketplace from "./components/Temporary";
+import MintNFT from "./components/MintNFT";
 
 function App() {
   return (
     <div className="NTF-Marketplace">
-      <Marketplace></Marketplace>
+      <Marketplace />
+      <MintNFT />
     </div>
   );
 }
