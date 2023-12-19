@@ -22,7 +22,7 @@ contract NFTMarketplace is ERC721, Ownable, IERC721Receiver {
     event NFTSaleCancelled(uint256 tokenId);
 
 
-    constructor(string memory _name, string memory _symbol, uint256 _marketplaceFee, address initialOwner, string memory _initialBaseTokenURI) ERC721(_name, _symbol) Ownable(initialOwner) {
+    constructor(string memory _name, string memory _symbol, uint256 _marketplaceFee, address initialOwner) ERC721(_name, _symbol) Ownable(initialOwner) {
         marketplaceFee = _marketplaceFee;
     }
 
