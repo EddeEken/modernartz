@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 
 contract NFTMarketplace is ERC721, Ownable, IERC721Receiver {
     using Address for address payable;
@@ -19,8 +20,23 @@ contract NFTMarketplace is ERC721, Ownable, IERC721Receiver {
     event NFTSold(uint256 tokenId, address buyer, uint256 price);
     event NFTSaleCancelled(uint256 tokenId);
 
-    constructor(string memory _name, string memory _symbol, uint256 _marketplaceFee) ERC721(_name, _symbol) {
+      // Base URI for metadata
+    string private _baseTokenURI;
+
+    constructor(string memory _name, string memory _symbol, uint256 _marketplaceFee, address initialOwner, string memory _initialBaseTokenURI) ERC721(_name, _symbol) Ownable(initialOwner) {
         marketplaceFee = _marketplaceFee;
+        _baseTokenURI = _initialBaseTokenURI;
+    }
+
+    // Function to get the base URI for all token URIs
+    function baseTokenURI() public view returns (string memory) {
+        return _baseTokenURI;
+    }
+
+    // Function to generate the URI for a specific token
+    function tokenURI(uint256 tokenId) public view override returns (string memory) {
+        require(_exists(tokenId), "Token does not exist");
+        return _baseTokenURI.append(tokenId.toString());
     }
 
     function mint() external onlyOwner {
@@ -31,7 +47,7 @@ contract NFTMarketplace is ERC721, Ownable, IERC721Receiver {
 
     function listNFT(uint256 tokenId, uint256 price) external {
         require(ownerOf(tokenId) == msg.sender, "You do not own this NFT");
-        require(!_exists(tokenId), "NFT does not exist");
+        require(ownerOf(tokenId) != address(0), "NFT does not exist");
         
         nftPrices[tokenId] = price;
         nftsForSale[tokenId] = true;
@@ -64,7 +80,7 @@ contract NFTMarketplace is ERC721, Ownable, IERC721Receiver {
         emit NFTSold(tokenId, msg.sender, price);
     }
 
-  function cancelSale(uint256 tokenId) external {
+    function cancelSale(uint256 tokenId) external {
     address owner = ownerOf(tokenId);
 
     require(owner == msg.sender, "You do not own this NFT");
