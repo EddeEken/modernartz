@@ -15,32 +15,27 @@ contract NFTMarketplace is ERC721, Ownable, IERC721Receiver {
 
     mapping(uint256 => uint256) public nftPrices;
     mapping(uint256 => bool) public nftsForSale;
+    mapping(uint256 => string) public nftIpfsMetadata;
 
     event NFTListed(uint256 tokenId, uint256 price);
     event NFTSold(uint256 tokenId, address buyer, uint256 price);
     event NFTSaleCancelled(uint256 tokenId);
 
-      // Base URI for metadata
-    string private _baseTokenURI;
 
     constructor(string memory _name, string memory _symbol, uint256 _marketplaceFee, address initialOwner, string memory _initialBaseTokenURI) ERC721(_name, _symbol) Ownable(initialOwner) {
         marketplaceFee = _marketplaceFee;
         _baseTokenURI = _initialBaseTokenURI;
     }
 
-    // Function to get the base URI for all token URIs
-    function baseTokenURI() public view returns (string memory) {
-        return _baseTokenURI;
-    }
-
     // Function to generate the URI for a specific token
     function tokenURI(uint256 tokenId) public view override returns (string memory) {
         require(_exists(tokenId), "Token does not exist");
-        return _baseTokenURI.append(tokenId.toString());
+        return nftIpfsMetadata[tokenId].append(tokenId.toString());
     }
 
-    function mint() external onlyOwner {
+    function mint(string memory ipfsMetadata) external onlyOwner {
         uint256 tokenId = nextTokenId;
+        nftIpfsMetadata[tokenId] = ipfsMetadata;
         _safeMint(msg.sender, tokenId);
         nextTokenId++;
     }
