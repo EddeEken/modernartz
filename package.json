@@ -3,13 +3,13 @@
   "devDependencies": {
     "chai": "^4.3.10",
     "ethereum-waffle": "^4.0.10",
-    "ethers": "^5.7.2",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "react-scripts": "^5.0.1"
+    "ethers": "^5.7.2"
   },
   "dependencies": {
     "@openzeppelin/contracts": "^4.3.2",
+    "axios": "^1.6.2",
+    "dotenv": "^16.3.1",
+    "form-data": "^4.0.0",
     "ipfs-core": "^0.18.1"
   }
 }

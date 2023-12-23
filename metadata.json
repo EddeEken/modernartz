@@ -1,0 +1,9 @@
+{
+  "name": "My NFT",
+  "description": "A cool NFT",
+  "image": "ipfs://bafkreid4ji6wmow6e4shkyffgtse5frqgiy5nt57oa5zvt6j6thkyj3xym",
+  "attributes": [
+    { "trait_type": "Color", "value": "Blue" },
+    { "trait_type": "Size", "value": "Large" }
+  ]
+}
