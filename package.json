@@ -1,5 +1,5 @@
 {
-  "name": "hardhat-project",
+  "name": "nftmarketplace-project",
   "devDependencies": {
     "chai": "^4.3.10",
     "ethereum-waffle": "^4.0.10",
