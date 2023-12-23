@@ -36,7 +36,9 @@ const App = () => {
       <div>
         <header>
           <div className="logo-container">
-            <img src={modernartzLogo} alt="ModernArtz Logo" />
+            <Link to="/" className="logo-link">
+              <img src={modernartzLogo} alt="ModernArtz Logo" />
+            </Link>
           </div>
           <nav>
             <ul>
@@ -62,14 +64,14 @@ const App = () => {
               Connect MetaMask
             </button>
           </div>
-          <main>
-            <Routes>
-              <Route path="/" element={<AllNFTs />} />
-              <Route path="/my-nfts" element={<MyNFTs />} />
-              <Route path="/mint-nfts" element={<MintNFTs />} />
-            </Routes>
-          </main>
         </header>
+        <div className="current-route-display">
+          <Routes>
+            <Route path="/" element={<AllNFTs />} />
+            <Route path="/my-nfts" element={<MyNFTs />} />
+            <Route path="/mint-nfts" element={<MintNFTs />} />
+          </Routes>
+        </div>
       </div>
     </Router>
   );

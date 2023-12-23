@@ -1,8 +1,40 @@
+body {
+  margin: 0;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logo-container {
+  order: 1;
+  margin-right: auto;
+}
+
+.logo-container img {
+  width: 320px;
+  height: auto;
+  margin-left: 15px;
+}
+
+nav {
+  order: 2;
+  display: flex;
+  align-items: center;
+}
+
+.metamask-button-container {
+  order: 3;
+  margin-left: auto;
+}
+
 .nav-button {
   display: inline-block;
   padding: 10px 20px;
   background-color: #007bff;
-  border: 1px solid #007bff;
+  border: 3px solid #000000;
   border-radius: 5px;
   margin-right: 10px;
   cursor: pointer;
@@ -21,13 +53,24 @@
 
 .metamask-button {
   background-color: #007bff;
+  font-size: 1rem;
   color: white;
-  padding: 10px 15px;
+  padding: 10px 20px;
   border-radius: 5px;
   margin-right: 20px;
-  margin-top: 10px;
+  border: 3px solid #000000;
   cursor: pointer;
-  position: absolute;
-  top: 0;
-  right: 0;
+}
+
+.metamask-button:hover {
+  background-color: #0056b3;
+  border-color: #0056b3;
+}
+
+.current-route-display {
+  clear: both;
+  font-size: 1.5rem;
+  padding: 10px;
+  margin-top: 20px;
+  text-align: center;
 }
