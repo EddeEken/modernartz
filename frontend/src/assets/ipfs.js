@@ -1,6 +1,5 @@
-const { NFTStorage, Blob } = require("nft.storage");
+import { NFTStorage, Blob } from "nft.storage";
 
-// Initialize nft.storage client
 const initIPFS = () => {
   // Use your nft.storage API key here
   const NFT_STORAGE_TOKEN = "your-nft.storage-api-key";
@@ -24,4 +23,4 @@ const addFile = async (file) => {
   return result.cid;
 };
 
-module.exports = { initIPFS, addFile };
+export { initIPFS, addFile };
