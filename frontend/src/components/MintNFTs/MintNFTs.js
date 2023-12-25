@@ -1,8 +1,25 @@
 import React, { useState } from "react";
 import { ethers } from "ethers";
-import { initIPFS, addFile } from "../../assets/ipfs.js";
+import { client } from "nft.storage";
 import NFTMarketplaceABI from "../../assets/NFTMarketplaceABI.json";
 import "./MintNFTs.css";
+
+const nftStorageClient = client({
+  token:
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkaWQ6ZXRocjoweGZlOTZFMkMxMTgyOTJlOUE4ZDFkNjc3QWVGNWM1Y2RmMTc4YjU3M0QiLCJpc3MiOiJuZnQtc3RvcmFnZSIsImlhdCI6MTcwMzAwMjA4NTg0NywibmFtZSI6IkVkdmluIEVrc3Ryw7ZtIn0.wIXeB8kmwAwwQ6rrcXHW23F-tzFTwsSCM3U53evqPpA",
+});
+
+async function saveToNftStorage(metadata) {
+  try {
+    const cid = await nftStorageClient.store([
+      new File([JSON.stringify(metadata)], "metadata.json"),
+    ]);
+    return `ipfs://${cid}`;
+  } catch (error) {
+    console.error("Error uploading to nft.storage:", error.message);
+    throw error;
+  }
+}
 
 function MintNFT({ signer, address }) {
   const [file, setFile] = useState(null);
@@ -20,30 +37,18 @@ function MintNFT({ signer, address }) {
     }
 
     try {
-      // Initialize IPFS
-      const ipfs = await initIPFS();
+      const imageCID = await saveToNftStorage(file);
 
-      // Add image file to IPFS and get the CID
-      const imageCID = await addFile(file);
-      const imageUrl = `ipfs://${imageCID}`;
-
-      // Construct the metadata
       const metadata = {
         name: name,
         description: description,
-        image: imageUrl,
-        attributes: [], // Add attributes as needed
+        image: imageCID,
       };
 
-      // Add metadata to IPFS and get the CID
-      const metadataCID = await addFile(JSON.stringify(metadata));
-      const metadataURI = `ipfs://${metadataCID}`;
-
-      // Get the contract instance
+      const metadataCID = await saveToNftStorage(metadata);
       const contract = new ethers.Contract(address, NFTMarketplaceABI, signer);
 
-      // Mint the NFT with the IPFS URL as the tokenURI
-      await contract.mint(metadataURI);
+      await contract.mint(`ipfs://${metadataCID}`);
 
       alert("NFT minted successfully!");
     } catch (error) {

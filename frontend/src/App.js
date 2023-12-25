@@ -1,28 +1,33 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import Web3 from "web3";
+import { ethers } from "ethers"; // Add this line to import ethers
 import AllNFTs from "./components/AllNFTs/AllNFTs";
 import MyNFTs from "./components/MyNFTs/MyNFTs";
-import MintNFTs from "./components/MintNFTs/MintNFTs";
+import MintNFT from "./components/MintNFTs/MintNFT";
 import modernartzLogo from "./assets/modernartz.png";
 import "./App.css";
 
 const App = () => {
+  const [signer, setSigner] = useState(null);
+  const [address, setAddress] = useState(null);
+
   const loadWeb3 = async () => {
     if (window.ethereum) {
-      // Modern dapp browsers
       window.web3 = new Web3(window.ethereum);
       try {
-        // Request account access
         await window.ethereum.request({ method: "eth_requestAccounts" });
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        const signer = provider.getSigner();
+        const address = await signer.getAddress();
+        setSigner(signer);
+        setAddress(address);
       } catch (error) {
         console.error("User denied account access");
       }
     } else if (window.web3) {
-      // Legacy dapp browsers
       window.web3 = new Web3(window.web3.currentProvider);
     } else {
-      // Non-dapp browsers
       console.error("No web3 detected. You should consider trying MetaMask!");
     }
   };
@@ -67,9 +72,15 @@ const App = () => {
         </header>
         <div className="current-route-display">
           <Routes>
-            <Route path="/" element={<AllNFTs />} />
-            <Route path="/my-nfts" element={<MyNFTs />} />
-            <Route path="/mint-nfts" element={<MintNFTs />} />
+            <Route path="/" element={<AllNFTs address={address} />} />
+            <Route
+              path="/my-nfts"
+              element={<MyNFTs signer={signer} address={address} />}
+            />
+            <Route
+              path="/mint-nfts"
+              element={<MintNFT signer={signer} address={address} />}
+            />
           </Routes>
         </div>
       </div>

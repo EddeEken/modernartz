@@ -1,28 +1,42 @@
 import React, { useEffect, useState } from "react";
+import { ethers } from "ethers";
+import NFTMarketplaceABI from "../../assets/NFTMarketplaceABI.json";
 import "./AllNFTs.css";
 
-const AllNFTs = () => {
-  // State to store all NFTs on sale
+const AllNFTs = ({ address }) => {
   const [allNFTs, setAllNFTs] = useState([]);
 
-  // Fetch all NFTs on sale from your contract or API
   useEffect(() => {
-    // Implement logic to fetch NFTs on sale
-    // For example, call a function in your smart contract or API
-    // Update the state with the fetched NFTs
-  }, []);
+    const fetchAllNFTs = async () => {
+      try {
+        const contract = new ethers.Contract(
+          address,
+          NFTMarketplaceABI,
+          ethers.getDefaultProvider()
+        );
+        const totalSupply = await contract.totalSupply();
+        const allNFTsData = await Promise.all(
+          Array.from({ length: totalSupply.toNumber() }, (_, index) =>
+            contract.tokenURI(index)
+          )
+        );
+
+        setAllNFTs(allNFTsData);
+      } catch (error) {
+        console.error("Error fetching all NFTs:", error.message);
+      }
+    };
+
+    fetchAllNFTs();
+  }, [address]);
 
   return (
     <div>
       <h1>All NFTs on Sale</h1>
-      {/* Display the list of NFTs on sale */}
       <ul>
-        {allNFTs.map((nft) => (
-          <li key={nft.id}>
-            {/* Display NFT information */}
-            <p>{nft.name}</p>
-            <p>{nft.description}</p>
-            {/* Add more fields as needed */}
+        {allNFTs.map((nft, index) => (
+          <li key={index}>
+            <p>TokenURI: {nft}</p>
           </li>
         ))}
       </ul>
