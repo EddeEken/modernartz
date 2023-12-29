@@ -3,8 +3,18 @@ import { ethers } from "ethers";
 import NFTMarketplaceABI from "../../assets/NFTMarketplaceABI.json";
 import "./AllNFTs.css";
 
-const AllNFTs = ({ address }) => {
+const AllNFTs = ({ signer, address }) => {
   const [allNFTs, setAllNFTs] = useState([]);
+
+  const cancelSale = async (tokenId) => {
+    const contract = new ethers.Contract(address, NFTMarketplaceABI, signer);
+    try {
+      const tx = await contract.cancelSale(tokenId);
+      await tx.wait();
+    } catch (error) {
+      console.error("Error cancelling sale:", error.message);
+    }
+  };
 
   useEffect(() => {
     const fetchAllNFTs = async () => {
@@ -14,12 +24,20 @@ const AllNFTs = ({ address }) => {
           NFTMarketplaceABI,
           ethers.getDefaultProvider()
         );
-        const totalSupply = await contract.totalSupply();
-        const allNFTsData = await Promise.all(
-          Array.from({ length: totalSupply.toNumber() }, (_, index) =>
-            contract.tokenURI(index)
-          )
-        );
+
+        let currentTokenID = 0;
+        const allNFTsData = [];
+
+        while (true) {
+          try {
+            const tokenURI = await contract.tokenURI(currentTokenID);
+            const isForSale = await contract.nftsForSale(currentTokenID);
+            allNFTsData.push({ id: currentTokenID, tokenURI, isForSale });
+            currentTokenID++;
+          } catch (error) {
+            break;
+          }
+        }
 
         setAllNFTs(allNFTsData);
       } catch (error) {
@@ -34,9 +52,12 @@ const AllNFTs = ({ address }) => {
     <div>
       <h1>All NFTs on Sale</h1>
       <ul>
-        {allNFTs.map((nft, index) => (
-          <li key={index}>
-            <p>TokenURI: {nft}</p>
+        {allNFTs.map((nft) => (
+          <li key={nft.id}>
+            <p>TokenURI: {nft.tokenURI}</p>
+            {nft.isForSale && (
+              <button onClick={() => cancelSale(nft.id)}>Cancel Sale</button>
+            )}
           </li>
         ))}
       </ul>
