@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { ethers } from "ethers";
 import { NFTStorage, Blob } from "nft.storage";
-import NFTMarketplaceABI from "../../assets/NFTMarketplaceABI.json";
+import { ABI } from "../../assets/NFTMarketplaceABI";
 import "./MintNFTs.css";
 // import dotenv from "dotenv";
 // dotenv.config();
@@ -23,6 +23,7 @@ const MintNFT = ({ signer, address }) => {
 
     console.log("Uploading to IPFS...");
     const ipfs = await client.storeBlob(new Blob([data]));
+    console.log("File Data:", data);
     console.log("File CID is:", ipfs);
     return `ipfs://${ipfs}`;
   };
@@ -48,7 +49,8 @@ const MintNFT = ({ signer, address }) => {
       const metadataCID = await saveToNftStorage(JSON.stringify(metadata));
 
       // Mint NFT using the IPFS links
-      const contract = new ethers.Contract(address, NFTMarketplaceABI, signer);
+      const contractAddress = "0x3F11ccCc461b5f115D921DaFC642E309D2eCcEBD";
+      const contract = new ethers.Contract(contractAddress, ABI, signer);
       await contract.mint(`ipfs://${metadataCID}`);
 
       alert("NFT minted successfully!");
