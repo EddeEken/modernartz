@@ -3,6 +3,8 @@ import { ethers } from "ethers";
 import { NFTStorage, Blob } from "nft.storage";
 import { ABI } from "../../assets/NFTMarketplaceABI";
 import "./MintNFTs.css";
+// import dotenv from "dotenv";
+// dotenv.config();
 
 async function saveToNftStorage(data) {
   const NFT_STORAGE_TOKEN =
@@ -31,18 +33,21 @@ const MintNFT = ({ signer, contractAddress }) => {
     }
 
     try {
+      // Upload image to IPFS
       const imageCID = await saveToNftStorage(file);
 
+      // Create metadata object
       const metadata = {
         name: name,
         description: description,
         image: imageCID,
       };
-
+      
       const metadataCID = await saveToNftStorage(JSON.stringify(metadata));
       console.log("Minting NFT with metadataCID:", metadataCID);
       const contract = new ethers.Contract(contractAddress, ABI, signer);
-
+      
+      const contract = new ethers.Contract(contractAddress, ABI, signer);
       await contract.mint(`ipfs://${metadataCID}`);
 
       alert("NFT minted successfully!");

@@ -16,6 +16,20 @@ const AllNFTs = ({ contractAddress }) => {
           ethers.getDefaultProvider()
         );
 
+        let currentTokenID = 0;
+        const allNFTsData = [];
+
+        while (true) {
+          try {
+            const tokenURI = await contract.tokenURI(currentTokenID);
+            const isForSale = await contract.nftsForSale(currentTokenID);
+            allNFTsData.push({ id: currentTokenID, tokenURI, isForSale });
+            currentTokenID++;
+          } catch (error) {
+            break;
+          }
+        }
+
         const supply = await contract.nextTokenId();
         setTotalSupply(supply.toNumber());
 
@@ -38,9 +52,12 @@ const AllNFTs = ({ contractAddress }) => {
     <div>
       <h1>All NFTs on Sale</h1>
       <ul>
-        {allNFTs.map((nft, index) => (
-          <li key={index}>
-            <p>TokenURI: {nft}</p>
+        {allNFTs.map((nft) => (
+          <li key={nft.id}>
+            <p>TokenURI: {nft.tokenURI}</p>
+            {nft.isForSale && (
+              <button onClick={() => cancelSale(nft.id)}>Cancel Sale</button>
+            )}
           </li>
         ))}
       </ul>

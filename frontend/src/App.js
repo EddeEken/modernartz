@@ -3,9 +3,9 @@ import React, { useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import Web3 from "web3";
 import { ethers } from "ethers";
-import AllNFTs from "./components/AllNFTs/AllNFTs";
-import MyNFTs from "./components/MyNFTs/MyNFTs";
-import MintNFTs from "./components/MintNFTs/MintNFTs";
+import AllNFTs from "./components/AllNFTs/AllNFTs.js";
+import MyNFTs from "./components/MyNFTs/MyNFTs.js";
+import MintNFTs from "./components/MintNFTs/MintNFTs.js";
 import modernartzLogo from "./assets/modernartz.png";
 import "./App.css";
 
@@ -46,7 +46,11 @@ const App = () => {
         <header>
           <div className="logo-container">
             <Link to="/" className="logo-link">
-              <img src={modernartzLogo} alt="ModernArtz Logo" />
+              <img
+                src={modernartzLogo}
+                alt="ModernArtz Logo"
+                address={address}
+              />
             </Link>
           </div>
           <nav>
