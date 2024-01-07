@@ -1,20 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { ethers } from "ethers";
-import NFTMarketplaceABI from "../../assets/NFTMarketplaceABI.json";
+import { ABI } from "../../assets/NFTMarketplaceABI";
 import "./MyNFTs.css";
 
-const MyNFTs = ({ signer, address }) => {
+const MyNFTs = ({ signer, userAddress, contractAddress }) => {
   const [myNFTs, setMyNFTs] = useState([]);
 
   useEffect(() => {
     const fetchMyNFTs = async () => {
       try {
-        const contract = new ethers.Contract(
-          address,
-          NFTMarketplaceABI,
-          signer
-        );
-        const filter = contract.filters.Transfer(signer.address, null, null);
+        const contract = new ethers.Contract(contractAddress, ABI, signer);
+        const filter = contract.filters.Transfer(userAddress, null, null);
         const transferEvents = await contract.queryFilter(filter);
 
         const myNFTIds = transferEvents.map((event) =>
@@ -34,7 +30,7 @@ const MyNFTs = ({ signer, address }) => {
     };
 
     fetchMyNFTs();
-  }, [signer, address]);
+  }, [signer, userAddress, contractAddress]);
 
   return (
     <div>

@@ -1,27 +1,21 @@
 import React, { useState } from "react";
 import { ethers } from "ethers";
-import { client } from "nft.storage";
-import NFTMarketplaceABI from "../../assets/NFTMarketplaceABI.json";
+import { NFTStorage, Blob } from "nft.storage";
+import { ABI } from "../../assets/NFTMarketplaceABI";
 import "./MintNFTs.css";
 
-const nftStorageClient = client({
-  token:
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkaWQ6ZXRocjoweGZlOTZFMkMxMTgyOTJlOUE4ZDFkNjc3QWVGNWM1Y2RmMTc4YjU3M0QiLCJpc3MiOiJuZnQtc3RvcmFnZSIsImlhdCI6MTcwMzAwMjA4NTg0NywibmFtZSI6IkVkdmluIEVrc3Ryw7ZtIn0.wIXeB8kmwAwwQ6rrcXHW23F-tzFTwsSCM3U53evqPpA",
-});
+async function saveToNftStorage(data) {
+  const NFT_STORAGE_TOKEN =
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkaWQ6ZXRocjoweGZlOTZFMkMxMTgyOTJlOUE4ZDFkNjc3QWVGNWM1Y2RmMTc4YjU3M0QiLCJpc3MiOiJuZnQtc3RvcmFnZSIsImlhdCI6MTcwNDU1Nzc2MjcwOSwibmFtZSI6Im5mdCJ9.HYBoUs2SLdLdmtUmcr3TA4ng2dwfShkxgyM-kfu_A3E";
+  const client = new NFTStorage({ token: NFT_STORAGE_TOKEN });
 
-async function saveToNftStorage(metadata) {
-  try {
-    const cid = await nftStorageClient.store([
-      new File([JSON.stringify(metadata)], "metadata.json"),
-    ]);
-    return `ipfs://${cid}`;
-  } catch (error) {
-    console.error("Error uploading to nft.storage:", error.message);
-    throw error;
-  }
+  console.log("Uploading to IPFS...");
+  const ipfs = await client.storeBlob(new Blob([data]));
+  console.log("File CID is:", ipfs);
+  return `ipfs://${ipfs}`;
 }
 
-function MintNFT({ signer, address }) {
+const MintNFT = ({ signer, contractAddress }) => {
   const [file, setFile] = useState(null);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -32,7 +26,7 @@ function MintNFT({ signer, address }) {
 
   const handleMint = async () => {
     if (!file || !name || !description) {
-      alert("Please fill in all fields");
+      console.error("Please fill in all fields");
       return;
     }
 
@@ -45,8 +39,9 @@ function MintNFT({ signer, address }) {
         image: imageCID,
       };
 
-      const metadataCID = await saveToNftStorage(metadata);
-      const contract = new ethers.Contract(address, NFTMarketplaceABI, signer);
+      const metadataCID = await saveToNftStorage(JSON.stringify(metadata));
+      console.log("Minting NFT with metadataCID:", metadataCID);
+      const contract = new ethers.Contract(contractAddress, ABI, signer);
 
       await contract.mint(`ipfs://${metadataCID}`);
 
@@ -82,6 +77,6 @@ function MintNFT({ signer, address }) {
       <button onClick={handleMint}>Mint NFT</button>
     </div>
   );
-}
+};
 
 export default MintNFT;
