@@ -3,22 +3,12 @@ import { ethers } from "ethers";
 import { ABI } from "../../assets/NFTMarketplaceABI";
 import "./AllNFTs.css";
 
-const AllNFTs = ({ signer, address }) => {
+const AllNFTs = ({ contractAddress }) => {
   const [allNFTs, setAllNFTs] = useState([]);
-  const contractAddress = "0x3F11ccCc461b5f115D921DaFC642E309D2eCcEBD";
-
-  const cancelSale = async (tokenId) => {
-    const contract = new ethers.Contract(contractAddress, ABI, signer);
-    try {
-      const tx = await contract.cancelSale(tokenId);
-      await tx.wait();
-    } catch (error) {
-      console.error("Error cancelling sale:", error.message);
-    }
-  };
+  const [totalSupply, setTotalSupply] = useState(0);
 
   useEffect(() => {
-    const fetchAllNFTs = async () => {
+    const fetchData = async () => {
       try {
         const contract = new ethers.Contract(
           contractAddress,
@@ -40,14 +30,23 @@ const AllNFTs = ({ signer, address }) => {
           }
         }
 
-        setAllNFTs(allNFTsData);
+        const supply = await contract.nextTokenId();
+        setTotalSupply(supply.toNumber());
+
+        const nftsData = [];
+        for (let i = 0; i < totalSupply; i++) {
+          const tokenURI = await contract.tokenURI(i);
+          nftsData.push(tokenURI);
+        }
+
+        setAllNFTs(nftsData);
       } catch (error) {
-        console.error("Error fetching all NFTs:", error.message);
+        console.error("Error fetching NFT data:", error.message);
       }
     };
 
-    fetchAllNFTs();
-  }, [address]);
+    fetchData();
+  }, [contractAddress, totalSupply]);
 
   return (
     <div>

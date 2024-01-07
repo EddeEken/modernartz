@@ -3,8 +3,7 @@ import { ethers } from "ethers";
 import { ABI } from "../../assets/NFTMarketplaceABI";
 import "./MyNFTs.css";
 
-const MyNFTs = ({ signer, address }) => {
-  const [desiredPrice, setDesiredPrice] = useState(0);
+const MyNFTs = ({ signer, userAddress, contractAddress }) => {
   const [myNFTs, setMyNFTs] = useState([]);
   const contractAddress = "0x3F11ccCc461b5f115D921DaFC642E309D2eCcEBD";
 
@@ -32,7 +31,7 @@ const MyNFTs = ({ signer, address }) => {
     const fetchMyNFTs = async () => {
       try {
         const contract = new ethers.Contract(contractAddress, ABI, signer);
-        const filter = contract.filters.Transfer(signer.address, null, null);
+        const filter = contract.filters.Transfer(userAddress, null, null);
         const transferEvents = await contract.queryFilter(filter);
 
         const myNFTIds = transferEvents.map((event) =>
@@ -53,7 +52,7 @@ const MyNFTs = ({ signer, address }) => {
     };
 
     fetchMyNFTs();
-  }, [signer, address]);
+  }, [signer, userAddress, contractAddress]);
 
   return (
     <div>
