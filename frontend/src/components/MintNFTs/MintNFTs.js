@@ -3,12 +3,10 @@ import { ethers } from "ethers";
 import { NFTStorage, Blob } from "nft.storage";
 import { ABI } from "../../assets/NFTMarketplaceABI";
 import "./MintNFTs.css";
-// import dotenv from "dotenv";
-// dotenv.config();
 
 async function saveToNftStorage(data) {
   const NFT_STORAGE_TOKEN =
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkaWQ6ZXRocjoweGZlOTZFMkMxMTgyOTJlOUE4ZDFkNjc3QWVGNWM1Y2RmMTc4YjU3M0QiLCJpc3MiOiJuZnQtc3RvcmFnZSIsImlhdCI6MTcwNDU1Nzc2MjcwOSwibmFtZSI6Im5mdCJ9.HYBoUs2SLdLdmtUmcr3TA4ng2dwfShkxgyM-kfu_A3E";
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkaWQ6ZXRocjoweGZlOTZFMkMxMTgyOTJlOUE4ZDFkNjc3QWVGNWM1Y2RmMTc4YjU3M0QiLCJpc3MiOiJuZnQtc3RvcmFnZSIsImlhdCI6MTcwMzAwMjA4NTg0NywibmFtZSI6IkVkdmluIEVrc3Ryw7ZtIn0.wIXeB8kmwAwwQ6rrcXHW23F-tzFTwsSCM3U53evqPpA";
   const client = new NFTStorage({ token: NFT_STORAGE_TOKEN });
 
   console.log("Uploading to IPFS...");
@@ -17,7 +15,7 @@ async function saveToNftStorage(data) {
   return `ipfs://${ipfs}`;
 }
 
-const MintNFT = ({ signer, contractAddress }) => {
+const MintNFT = ({ signer, contractAddress, userAddress }) => {
   const [file, setFile] = useState(null);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -33,22 +31,21 @@ const MintNFT = ({ signer, contractAddress }) => {
     }
 
     try {
-      // Upload image to IPFS
       const imageCID = await saveToNftStorage(file);
 
-      // Create metadata object
       const metadata = {
         name: name,
         description: description,
         image: imageCID,
       };
-      
+
       const metadataCID = await saveToNftStorage(JSON.stringify(metadata));
-      console.log("Minting NFT with metadataCID:", metadataCID);
+      const metadataPath = `ipfs://${metadataCID.replace("ipfs://", "")}`;
+
+      console.log("Minting NFT with metadataCID:", metadataPath);
+
       const contract = new ethers.Contract(contractAddress, ABI, signer);
-      
-      const contract = new ethers.Contract(contractAddress, ABI, signer);
-      await contract.mint(`ipfs://${metadataCID}`);
+      await contract.mint(metadataPath, userAddress);
 
       alert("NFT minted successfully!");
     } catch (error) {
@@ -79,7 +76,7 @@ const MintNFT = ({ signer, contractAddress }) => {
           onChange={(e) => setDescription(e.target.value)}
         />
       </label>
-      <button onClick={handleMint}>Mint NFT</button>
+      <button onClick={() => handleMint(userAddress)}>Mint NFT</button>
     </div>
   );
 };

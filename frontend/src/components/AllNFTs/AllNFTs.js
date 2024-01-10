@@ -22,8 +22,7 @@ const AllNFTs = ({ contractAddress }) => {
         while (true) {
           try {
             const tokenURI = await contract.tokenURI(currentTokenID);
-            const isForSale = await contract.nftsForSale(currentTokenID);
-            allNFTsData.push({ id: currentTokenID, tokenURI, isForSale });
+            allNFTsData.push({ id: currentTokenID, tokenURI });
             currentTokenID++;
           } catch (error) {
             break;
@@ -55,9 +54,6 @@ const AllNFTs = ({ contractAddress }) => {
         {allNFTs.map((nft) => (
           <li key={nft.id}>
             <p>TokenURI: {nft.tokenURI}</p>
-            {nft.isForSale && (
-              <button onClick={() => cancelSale(nft.id)}>Cancel Sale</button>
-            )}
           </li>
         ))}
       </ul>

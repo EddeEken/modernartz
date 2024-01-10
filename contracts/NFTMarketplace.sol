@@ -25,16 +25,15 @@ contract NFTMarketplace is ERC721, Ownable, IERC721Receiver {
        marketplaceFee = _marketplaceFee;
    }
 
-   // Function to generate the URI for a specific token
    function tokenURI(uint256 tokenId) public view override returns (string memory) {
        require(ownerOf(tokenId) != address(0), "Token does not exist");
        return nftIpfsMetadata[tokenId];
    }
 
-   function mint(string memory ipfsMetadata) external onlyOwner {
+   function mint(string memory ipfsMetadata, address userAddress) external onlyOwner {
        uint256 tokenId = nextTokenId;
        nftIpfsMetadata[tokenId] = ipfsMetadata;
-       _safeMint(msg.sender, tokenId);
+       _safeMint(userAddress, tokenId);
        nextTokenId++;
    }
 
@@ -55,19 +54,14 @@ contract NFTMarketplace is ERC721, Ownable, IERC721Receiver {
 
        address seller = ownerOf(tokenId);
 
-       // Calculate fees
        uint256 feeAmount = (price * marketplaceFee) / 100;
        uint256 sellerAmount = price - feeAmount;
 
-       // Transfer fees
        payable(owner()).transfer(feeAmount);
-       // Transfer sale amount to seller
        payable(seller).transfer(sellerAmount);
 
-       // Transfer NFT to buyer
        _transfer(seller, msg.sender, tokenId);
 
-       // Update state
        nftsForSale[tokenId] = false;
        
        emit NFTSold(tokenId, msg.sender, price);
@@ -79,18 +73,15 @@ contract NFTMarketplace is ERC721, Ownable, IERC721Receiver {
        require(owner == msg.sender, "You do not own this NFT");
        require(nftsForSale[tokenId], "NFT is not listed for sale");
 
-       // Remove listing
        nftsForSale[tokenId] = false;
 
        emit NFTSaleCancelled(tokenId);
    }
 
-   // New function to get the next token ID
    function getNextTokenId() public view returns (uint256) {
        return nextTokenId;
    }
 
-   // Implement onERC721Received
    function onERC721Received(address, address, uint256, bytes calldata) external pure override returns (bytes4) {
        return this.onERC721Received.selector;
    }

@@ -13,7 +13,7 @@ const App = () => {
   const [signer, setSigner] = useState(null);
   const [userAddress, setUserAddress] = useState(null);
   const [contractAddress, setContractAddress] = useState(
-    "0x6EDd201c251A4F5c371E856251a059de74abcf8a"
+    "0xD088299Efc909878137fc69CD65D88B8DdB164c9"
   );
 
   const loadWeb3 = async () => {
@@ -36,22 +36,12 @@ const App = () => {
     }
   };
 
-  useEffect(() => {
-    loadWeb3();
-  }, []);
-
   return (
     <Router>
       <div>
         <header>
           <div className="logo-container">
-            <Link to="/" className="logo-link">
-              <img
-                src={modernartzLogo}
-                alt="ModernArtz Logo"
-                address={address}
-              />
-            </Link>
+            <img src={modernartzLogo} alt="ModernArtz Logo" />
           </div>
           <nav>
             <ul>
@@ -73,7 +63,7 @@ const App = () => {
             </ul>
           </nav>
           <div className="metamask-button-container">
-            <button className="metamask-button" onClick={loadWeb3}>
+            <button className="metamask-button" onClick={() => loadWeb3()}>
               Connect MetaMask
             </button>
           </div>
@@ -102,7 +92,11 @@ const App = () => {
             <Route
               path="/mint-nfts"
               element={
-                <MintNFTs signer={signer} contractAddress={contractAddress} />
+                <MintNFTs
+                  signer={signer}
+                  userAddress={userAddress}
+                  contractAddress={contractAddress}
+                />
               }
             />
           </Routes>
