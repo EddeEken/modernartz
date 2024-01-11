@@ -3,7 +3,7 @@
   "devDependencies": {
     "chai": "^4.3.10",
     "ethereum-waffle": "^4.0.10",
-    "ethers": "^5.7.2"
+    "ethers": "^5.5.4"
   },
   "dependencies": {
     "@openzeppelin/contracts": "^4.3.2",

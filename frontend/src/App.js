@@ -1,7 +1,6 @@
 /* eslint-disable no-unused-vars */
 import React, { useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
-import Web3 from "web3";
 import { ethers } from "ethers";
 import AllNFTs from "./components/AllNFTs/AllNFTs.js";
 import MyNFTs from "./components/MyNFTs/MyNFTs.js";
@@ -13,29 +12,29 @@ const App = () => {
   const [signer, setSigner] = useState(null);
   const [userAddress, setUserAddress] = useState(null);
   const [contractAddress, setContractAddress] = useState(
-    "0xD088299Efc909878137fc69CD65D88B8DdB164c9"
+    "0x1207F2297e98d86edae7d7f3BABF313d64E306d9"
   );
+  const [provider, setProvider] = useState(null);
 
   const loadWeb3 = async () => {
-    if (window.ethereum) {
-      window.web3 = new Web3(window.ethereum);
-      try {
+    try {
+      if (window.ethereum) {
         await window.ethereum.request({ method: "eth_requestAccounts" });
+
         const provider = new ethers.providers.Web3Provider(window.ethereum);
         const signer = provider.getSigner();
         const address = await signer.getAddress();
+
         setSigner(signer);
         setUserAddress(address);
-      } catch (error) {
-        console.error("User denied account access");
+        setProvider(provider);
+      } else {
+        console.error("MetaMask not detected. Please install MetaMask.");
       }
-    } else if (window.web3) {
-      window.web3 = new Web3(window.web3.currentProvider);
-    } else {
-      console.error("No web3 detected. You should consider trying MetaMask!");
+    } catch (error) {
+      console.error("Error loading Web3:", error.message);
     }
   };
-
   return (
     <Router>
       <div>
@@ -74,8 +73,10 @@ const App = () => {
               path="/"
               element={
                 <AllNFTs
+                  signer={signer}
                   userAddress={userAddress}
                   contractAddress={contractAddress}
+                  provider={provider}
                 />
               }
             />
@@ -86,6 +87,7 @@ const App = () => {
                   signer={signer}
                   userAddress={userAddress}
                   contractAddress={contractAddress}
+                  provider={provider}
                 />
               }
             />
@@ -96,6 +98,7 @@ const App = () => {
                   signer={signer}
                   userAddress={userAddress}
                   contractAddress={contractAddress}
+                  provider={provider}
                 />
               }
             />

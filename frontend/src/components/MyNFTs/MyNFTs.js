@@ -1,48 +1,89 @@
-import React, { useEffect, useState } from "react";
+/* eslint-disable */
+import React, { useEffect, useState, useCallback } from "react";
 import { ethers } from "ethers";
 import { ABI } from "../../assets/NFTMarketplaceABI";
 import "./MyNFTs.css";
 
-const MyNFTs = ({ signer, userAddress, contractAddress }) => {
+const MyNFTs = ({ contractAddress, signer, provider, userAddress }) => {
   const [myNFTs, setMyNFTs] = useState([]);
+  const [error, setError] = useState(null);
+  const [connected, setConnected] = useState(false);
 
   useEffect(() => {
-    const fetchMyNFTs = async () => {
+    const checkConnected = async () => {
       try {
-        const contract = new ethers.Contract(contractAddress, ABI, signer);
-        const filter = contract.filters.Transfer(userAddress, null, null);
-        const transferEvents = await contract.queryFilter(filter);
-
-        const myNFTIds = transferEvents.map((event) =>
-          event.args[2].toNumber()
-        );
-        const myNFTsData = await Promise.all(
-          myNFTIds.map(async (tokenId) => {
-            const tokenURI = await contract.tokenURI(tokenId);
-            return { id: tokenId, tokenURI };
-          })
-        );
-
-        setMyNFTs(myNFTsData);
+        if (provider && provider.getSigner()) {
+          setConnected(true);
+        }
       } catch (error) {
-        console.error("Error fetching my NFTs:", error.message);
+        console.error("Error checking connection:", error.message);
       }
     };
 
-    fetchMyNFTs();
-  }, [signer, userAddress, contractAddress]);
+    checkConnected();
+  }, [provider]);
+
+  const fetchData = useCallback(async () => {
+    try {
+      if (!provider) {
+        setError("Provider is undefined");
+        return;
+      }
+
+      if (!provider.getSigner()) {
+        setError("Not connected to a wallet");
+        return;
+      }
+
+      setConnected(true);
+
+      const contract = new ethers.Contract(contractAddress, ABI, signer);
+
+      const totalSupply = await contract.balanceOf(userAddress);
+      const nfts = [];
+
+      for (let i = 0; i < totalSupply; i++) {
+        try {
+          const tokenURI = await contract.tokenURI(i);
+          nfts.push({ id: i, tokenURI: tokenURI });
+        } catch (error) {
+          console.error(
+            "Error fetching token data for token ID",
+            i,
+            ":",
+            error.message
+          );
+        }
+      }
+
+      setMyNFTs(nfts);
+    } catch (error) {
+      setError(error.message);
+    }
+  }, [contractAddress, signer, provider, userAddress]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const resolveIpfsUrl = (ipfsUrl) => {
+    const baseUrl = "https://nft.storage/ipfs/";
+    const cid = ipfsUrl.replace("ipfs://", "");
+    return `${baseUrl}${cid}`;
+  };
+
+  if (!connected) {
+    return <div>Connect your wallet to see your NFTs</div>;
+  }
 
   return (
     <div>
-      <h1>My NFTs</h1>
-      <ul>
-        {myNFTs.map((nft) => (
-          <li key={nft.id}>
-            <p>ID: {nft.id}</p>
-            <p>TokenURI: {nft.tokenURI}</p>
-          </li>
-        ))}
-      </ul>
+      <h2>My NFTs</h2>
+      {myNFTs.map((nft) => (
+        <div key={nft.id}>
+          <img src={resolveIpfsUrl(nft.tokenURI)} alt={`My NFT ${nft.id}`} />
+        </div>
+      ))}
     </div>
   );
 };

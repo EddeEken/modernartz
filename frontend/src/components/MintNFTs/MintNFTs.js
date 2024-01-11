@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { ethers } from "ethers";
 import { NFTStorage, Blob } from "nft.storage";
 import { ABI } from "../../assets/NFTMarketplaceABI";
@@ -15,10 +15,12 @@ async function saveToNftStorage(data) {
   return `ipfs://${ipfs}`;
 }
 
-const MintNFT = ({ signer, contractAddress, userAddress }) => {
+const MintNFT = ({ signer, contractAddress, provider, userAddress }) => {
   const [file, setFile] = useState(null);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [error, setError] = useState(null);
+  const [connected, setConnected] = useState(false);
 
   const handleFileChange = (event) => {
     setFile(event.target.files[0]);
@@ -26,11 +28,23 @@ const MintNFT = ({ signer, contractAddress, userAddress }) => {
 
   const handleMint = async () => {
     if (!file || !name || !description) {
-      console.error("Please fill in all fields");
+      setError("Please fill in all fields");
       return;
     }
 
     try {
+      if (!provider) {
+        setError("Provider is undefined. Connect your wallet to mint NFT.");
+        return;
+      }
+
+      if (!provider.getSigner()) {
+        setError("Not connected to a wallet. Connect your wallet to mint NFT.");
+        return;
+      }
+
+      setConnected(true);
+
       const imageCID = await saveToNftStorage(file);
 
       const metadata = {
@@ -49,34 +63,46 @@ const MintNFT = ({ signer, contractAddress, userAddress }) => {
 
       alert("NFT minted successfully!");
     } catch (error) {
-      console.error("Error minting NFT:", error.message);
+      setError(`Error minting NFT: ${error.message}`);
       alert("Error minting NFT. Please try again.");
     }
   };
 
+  useEffect(() => {
+    if (provider && provider.getSigner()) {
+      setConnected(true);
+    }
+  }, [provider]);
+
   return (
     <div>
-      <h1>Mint NFT</h1>
-      <label>
-        Choose a file:
-        <input type="file" onChange={handleFileChange} />
-      </label>
-      <label>
-        Name:
-        <input
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
-      </label>
-      <label>
-        Description:
-        <textarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-        />
-      </label>
-      <button onClick={() => handleMint(userAddress)}>Mint NFT</button>
+      {!connected && <div>Connect your wallet to mint NFT</div>}
+      {error && <div>Error: {error}</div>}
+      {connected && (
+        <>
+          <h1>Mint NFT</h1>
+          <label>
+            Choose a file:
+            <input type="file" onChange={handleFileChange} />
+          </label>
+          <label>
+            Name:
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </label>
+          <label>
+            Description:
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </label>
+          <button onClick={() => handleMint(userAddress)}>Mint NFT</button>
+        </>
+      )}
     </div>
   );
 };
