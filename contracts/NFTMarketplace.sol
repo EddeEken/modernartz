@@ -28,7 +28,8 @@ contract NFTMarketplace is ERC721, Ownable, IERC721Receiver {
 
    function tokenURI(uint256 tokenId) public view override returns (string memory) {
        require(ownerOf(tokenId) != address(0), "Token does not exist");
-       return nftIpfsMetadata[tokenId];
+        string memory metadata = nftIpfsMetadata[tokenId];
+        return metadata;
    }
 
    function mint(string memory ipfsMetadata, address userAddress) external onlyOwner {
@@ -78,6 +79,10 @@ contract NFTMarketplace is ERC721, Ownable, IERC721Receiver {
 
        emit NFTSaleCancelled(tokenId);
    }
+
+   function isNFTForSale(uint256 tokenId) external view returns (bool) {
+    return nftsForSale[tokenId];
+}
 
    function getNextTokenId() public view returns (uint256) {
        return nextTokenId;

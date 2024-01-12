@@ -12,7 +12,7 @@ const App = () => {
   const [signer, setSigner] = useState(null);
   const [userAddress, setUserAddress] = useState(null);
   const [contractAddress, setContractAddress] = useState(
-    "0x1207F2297e98d86edae7d7f3BABF313d64E306d9"
+    "0xec4dC312b070cDd89c94611b537F0c4Ab07d3AE3"
   );
   const [provider, setProvider] = useState(null);
 

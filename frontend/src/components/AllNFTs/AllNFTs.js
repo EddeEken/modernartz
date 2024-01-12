@@ -9,6 +9,22 @@ const AllNFTs = ({ contractAddress, signer, provider, userAddress }) => {
   const [error, setError] = useState(null);
   const [connected, setConnected] = useState(false);
 
+  const resolveIpfsUrl = (ipfsUrl) => {
+    if (!ipfsUrl) {
+      return "";
+    }
+
+    const isIpfsUri = ipfsUrl.startsWith("ipfs://");
+
+    if (isIpfsUri) {
+      const cid = ipfsUrl.replace("ipfs://", "");
+      const gatewayUrl = "https://ipfs.io/ipfs/";
+      return `${gatewayUrl}${cid}`;
+    } else {
+      return ipfsUrl;
+    }
+  };
+
   useEffect(() => {
     const checkConnected = async () => {
       try {
@@ -44,9 +60,19 @@ const AllNFTs = ({ contractAddress, signer, provider, userAddress }) => {
 
       for (let i = 0; i < totalSupply; i++) {
         try {
-          console.log(`Fetching token URI for token ID ${i}...`);
-          const tokenURI = await contract.tokenURI(i);
-          nfts.push({ id: i, tokenURI: tokenURI });
+          const metadataString = await contract.tokenURI(i);
+          const metadataUrl = resolveIpfsUrl(metadataString);
+
+          const response = await fetch(metadataUrl);
+          const metadata = await response.json();
+          nfts.push({
+            id: i,
+            tokenURI: {
+              name: metadata.name || "Unknown Name",
+              description: metadata.description || "Unknown Description",
+              image: metadata.image || "default-image-url",
+            },
+          });
         } catch (error) {
           console.error(
             "Error fetching token data for token ID",
@@ -64,15 +90,19 @@ const AllNFTs = ({ contractAddress, signer, provider, userAddress }) => {
     }
   }, [contractAddress, signer, provider, userAddress]);
 
+  const buyNFT = async (tokenId) => {
+    try {
+      const contract = new ethers.Contract(contractAddress, ABI, signer);
+      await contract.buyNFT(tokenId);
+      fetchData();
+    } catch (error) {
+      console.error("Error buying NFT:", error.message);
+    }
+  };
+
   useEffect(() => {
     fetchData();
   }, [fetchData]);
-
-  const resolveIpfsUrl = (ipfsUrl) => {
-    const baseUrl = "https://nft.storage/ipfs/";
-    const cid = ipfsUrl.replace("ipfs://", "");
-    return `${baseUrl}${cid}`;
-  };
 
   if (!connected) {
     return <div>Connect your wallet to see all NFTs for sale</div>;
@@ -83,7 +113,16 @@ const AllNFTs = ({ contractAddress, signer, provider, userAddress }) => {
       <h2>All NFTs for sale</h2>
       {allNFTs.map((nft) => (
         <div key={nft.id}>
-          <img src={resolveIpfsUrl(nft.tokenURI)} alt={`NFT ${nft.id}`} />
+          <img
+            src={resolveIpfsUrl(nft.tokenURI.image)}
+            alt={`My NFTs ${nft.id}`}
+            loading="lazy"
+          />
+          <div>Name: {nft.tokenURI.name}</div>
+          <div>Description: {nft.tokenURI.description}</div>
+          <div>
+            <button onClick={() => buyNFT(nft.id)}>Buy NFT</button>
+          </div>
         </div>
       ))}
     </div>
