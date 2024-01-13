@@ -56,10 +56,10 @@ const AllNFTs = ({ contractAddress, signer, provider, userAddress }) => {
 
       const contract = new ethers.Contract(contractAddress, ABI, signer);
 
-      const totalSupply = await contract.getTotalSupply();
       const nfts = [];
 
-      for (let i = 0; i < totalSupply; i++) {
+      let i = 0;
+      while (true) {
         try {
           const metadataString = await contract.tokenURI(i);
           const metadataUrl = resolveIpfsUrl(metadataString);
@@ -68,6 +68,7 @@ const AllNFTs = ({ contractAddress, signer, provider, userAddress }) => {
           const metadata = await response.json();
 
           const isForSale = await contract.isNFTForSale(i);
+
           if (isForSale) {
             const price = await contract.nftPrices(i);
 
@@ -82,16 +83,14 @@ const AllNFTs = ({ contractAddress, signer, provider, userAddress }) => {
               price,
             });
           }
+
+          i++;
         } catch (error) {
-          console.error(
-            "Error fetching token data for token ID",
-            i,
-            ":",
-            error.message
-          );
+          break;
         }
       }
 
+      console.log("Retrieved NFTs for sale:", nfts);
       console.log("Setting All NFTs...");
       setNFTs(nfts);
     } catch (error) {
@@ -117,10 +116,13 @@ const AllNFTs = ({ contractAddress, signer, provider, userAddress }) => {
           signer
         );
 
-        await signer.sendTransaction({
+        const transaction = await signer.sendTransaction({
           to: sellerAddress,
-          value: price,
+          value: ethers.utils.parseEther(buyPrice.toString()),
+          gasLimit: 21000,
         });
+
+        await transaction.wait();
 
         await sellerContract.transferFrom(userAddress, sellerAddress, tokenId);
 
