@@ -4,7 +4,13 @@ import { ethers } from "ethers";
 import { ABI } from "../../assets/NFTMarketplaceABI";
 import "./MyNFTs.css";
 
-const MyNFTs = ({ contractAddress, signer, provider, userAddress }) => {
+const MyNFTs = ({
+  contractAddress,
+  signer,
+  provider,
+  userAddress,
+  setAllNFTs,
+}) => {
   const [myNFTs, setMyNFTs] = useState([]);
   const [error, setError] = useState(null);
   const [connected, setConnected] = useState(false);
@@ -57,8 +63,9 @@ const MyNFTs = ({ contractAddress, signer, provider, userAddress }) => {
 
       const contract = new ethers.Contract(contractAddress, ABI, signer);
 
-      const totalSupply = await contract.balanceOf(userAddress);
+      const totalSupply = await contract.getNextTokenId();
       const nfts = [];
+      const allNfts = [];
 
       for (let i = 0; i < totalSupply; i++) {
         try {
@@ -69,6 +76,9 @@ const MyNFTs = ({ contractAddress, signer, provider, userAddress }) => {
           const metadata = await response.json();
 
           const isForSale = await contract.isNFTForSale(i);
+          const price = isForSale ? await contract.nftPrices(i) : undefined;
+
+          const owner = await contract.ownerOf(i);
 
           nfts.push({
             id: i,
@@ -77,7 +87,20 @@ const MyNFTs = ({ contractAddress, signer, provider, userAddress }) => {
               description: metadata.description || "Unknown Description",
               image: metadata.image || "default-image-url",
             },
-            isForSale: isForSale,
+            isForSale,
+            price,
+            owner,
+          });
+
+          allNfts.push({
+            id: i,
+            tokenURI: {
+              name: metadata.name || "Unknown Name",
+              description: metadata.description || "Unknown Description",
+              image: metadata.image || "default-image-url",
+              price,
+            },
+            isForSale,
           });
         } catch (error) {
           console.error(
@@ -90,7 +113,9 @@ const MyNFTs = ({ contractAddress, signer, provider, userAddress }) => {
       }
 
       setMyNFTs(nfts);
+      setAllNFTs(allNfts);
     } catch (error) {
+      console.error("Error fetching data:", error.message);
       setError(error.message);
     }
   }, [contractAddress, signer, provider, userAddress]);
@@ -107,6 +132,7 @@ const MyNFTs = ({ contractAddress, signer, provider, userAddress }) => {
         tokenId,
         ethers.utils.parseEther(sellPrice.toString())
       );
+      setSelectedNFTForSale(null);
       fetchData();
     } catch (error) {
       console.error("Error listing NFT for sale:", error.message);
@@ -128,15 +154,6 @@ const MyNFTs = ({ contractAddress, signer, provider, userAddress }) => {
     setSellPrice(e.target.value);
   };
 
-  const handleSellClick = (tokenId) => {
-    if (selectedNFTForSale === tokenId) {
-      cancelSale(tokenId);
-      setSelectedNFTForSale(null);
-    } else {
-      setSelectedNFTForSale(tokenId);
-    }
-  };
-
   useEffect(() => {
     fetchData();
   }, [fetchData]);
@@ -148,37 +165,40 @@ const MyNFTs = ({ contractAddress, signer, provider, userAddress }) => {
   return (
     <div>
       <h2>My NFTs</h2>
-      {myNFTs.map((nft) => (
-        <div key={nft.id}>
-          <img
-            src={resolveIpfsUrl(nft.tokenURI.image)}
-            alt={`My NFTs ${nft.id}`}
-            loading="lazy"
-          />
-          <div>Name: {nft.tokenURI.name}</div>
-          <div>Description: {nft.tokenURI.description}</div>
-          {nft.isForSale ? (
-            <div>
+      {myNFTs
+        .filter((nft) => nft.owner === userAddress)
+        .map((nft) => (
+          <div key={nft.id}>
+            <img
+              src={resolveIpfsUrl(nft.tokenURI.image)}
+              alt={`My NFTs ${nft.id}`}
+              loading="lazy"
+            />
+            <div>Name: {nft.tokenURI.name}</div>
+            <div>Description: {nft.tokenURI.description}</div>
+            {nft.isForSale ? (
               <div>
-                Price (ETH): {ethers.utils.formatEther(nft.tokenURI.price)}
+                <div>
+                  Price (ETH):{" "}
+                  {nft.price
+                    ? ethers.utils.formatEther(nft.price)
+                    : "Not available"}
+                </div>
+                <button onClick={() => cancelSale(nft.id)}>Cancel Sale</button>
               </div>
-              <button onClick={() => handleSellClick(nft.id)}>
-                Cancel Sale
-              </button>
-            </div>
-          ) : (
-            <div>
-              <input
-                type="number"
-                placeholder="Enter price in ETH"
-                value={sellPrice}
-                onChange={handleInputChange}
-              />
-              <button onClick={() => listNFTForSale(nft.id)}>Sell NFT</button>
-            </div>
-          )}
-        </div>
-      ))}
+            ) : (
+              <div>
+                <input
+                  type="number"
+                  placeholder="Enter price in ETH"
+                  value={sellPrice}
+                  onChange={handleInputChange}
+                />
+                <button onClick={() => listNFTForSale(nft.id)}>Sell NFT</button>
+              </div>
+            )}
+          </div>
+        ))}
     </div>
   );
 };

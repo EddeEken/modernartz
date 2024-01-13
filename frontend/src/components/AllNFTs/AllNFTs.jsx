@@ -5,9 +5,10 @@ import { ABI } from "../../assets/NFTMarketplaceABI";
 import "./AllNFTs.css";
 
 const AllNFTs = ({ contractAddress, signer, provider, userAddress }) => {
-  const [allNFTs, setAllNFTs] = useState([]);
+  const [nfts, setNFTs] = useState([]);
   const [error, setError] = useState(null);
   const [connected, setConnected] = useState(false);
+  const [buyPrice, setBuyPrice] = useState(0);
 
   const resolveIpfsUrl = (ipfsUrl) => {
     if (!ipfsUrl) {
@@ -65,14 +66,22 @@ const AllNFTs = ({ contractAddress, signer, provider, userAddress }) => {
 
           const response = await fetch(metadataUrl);
           const metadata = await response.json();
-          nfts.push({
-            id: i,
-            tokenURI: {
-              name: metadata.name || "Unknown Name",
-              description: metadata.description || "Unknown Description",
-              image: metadata.image || "default-image-url",
-            },
-          });
+
+          const isForSale = await contract.isNFTForSale(i);
+          if (isForSale) {
+            const price = await contract.nftPrices(i);
+
+            nfts.push({
+              id: i,
+              tokenURI: {
+                name: metadata.name || "Unknown Name",
+                description: metadata.description || "Unknown Description",
+                image: metadata.image || "default-image-url",
+              },
+              isForSale,
+              price,
+            });
+          }
         } catch (error) {
           console.error(
             "Error fetching token data for token ID",
@@ -84,19 +93,44 @@ const AllNFTs = ({ contractAddress, signer, provider, userAddress }) => {
       }
 
       console.log("Setting All NFTs...");
-      setAllNFTs(nfts);
+      setNFTs(nfts);
     } catch (error) {
       setError(error.message);
     }
   }, [contractAddress, signer, provider, userAddress]);
 
-  const buyNFT = async (tokenId) => {
+  const buyNFT = async (tokenId, price) => {
     try {
+      if (!buyPrice || isNaN(buyPrice)) {
+        setError("Please enter a valid price for the NFT.");
+        return;
+      }
+
       const contract = new ethers.Contract(contractAddress, ABI, signer);
-      await contract.buyNFT(tokenId);
-      fetchData();
+
+      if (price.eq(ethers.utils.parseEther(buyPrice.toString()))) {
+        const sellerAddress = await contract.ownerOf(tokenId);
+
+        const sellerContract = new ethers.Contract(
+          contractAddress,
+          ABI,
+          signer
+        );
+
+        await signer.sendTransaction({
+          to: sellerAddress,
+          value: price,
+        });
+
+        await sellerContract.transferFrom(userAddress, sellerAddress, tokenId);
+
+        fetchData();
+      } else {
+        setError("The provided price doesn't match the actual price.");
+      }
     } catch (error) {
       console.error("Error buying NFT:", error.message);
+      setError(error.message);
     }
   };
 
@@ -111,7 +145,7 @@ const AllNFTs = ({ contractAddress, signer, provider, userAddress }) => {
   return (
     <div>
       <h2>All NFTs for sale</h2>
-      {allNFTs.map((nft) => (
+      {nfts.map((nft) => (
         <div key={nft.id}>
           <img
             src={resolveIpfsUrl(nft.tokenURI.image)}
@@ -121,7 +155,7 @@ const AllNFTs = ({ contractAddress, signer, provider, userAddress }) => {
           <div>Name: {nft.tokenURI.name}</div>
           <div>Description: {nft.tokenURI.description}</div>
           <div>
-            <button onClick={() => buyNFT(nft.id)}>Buy NFT</button>
+            <button onClick={() => buyNFT(nft.id, nft.price)}>Buy NFT</button>
           </div>
         </div>
       ))}

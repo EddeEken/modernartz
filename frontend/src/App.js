@@ -2,9 +2,9 @@
 import React, { useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import { ethers } from "ethers";
-import AllNFTs from "./components/AllNFTs/AllNFTs.js";
-import MyNFTs from "./components/MyNFTs/MyNFTs.js";
-import MintNFTs from "./components/MintNFTs/MintNFTs.js";
+import AllNFTs from "./components/AllNFTs/AllNFTs.jsx";
+import MyNFTs from "./components/MyNFTs/MyNFTs.jsx";
+import MintNFTs from "./components/MintNFTs/MintNFTs.jsx";
 import modernartzLogo from "./assets/modernartz.png";
 import "./App.css";
 
@@ -12,9 +12,10 @@ const App = () => {
   const [signer, setSigner] = useState(null);
   const [userAddress, setUserAddress] = useState(null);
   const [contractAddress, setContractAddress] = useState(
-    "0xec4dC312b070cDd89c94611b537F0c4Ab07d3AE3"
+    "0x6113C2D7b832734A0f758bd11d818A1444d2D8b2"
   );
   const [provider, setProvider] = useState(null);
+  const [allNFTs, setAllNFTs] = useState([]);
 
   const loadWeb3 = async () => {
     try {
@@ -77,6 +78,7 @@ const App = () => {
                   userAddress={userAddress}
                   contractAddress={contractAddress}
                   provider={provider}
+                  allNFTs={allNFTs}
                 />
               }
             />
@@ -88,6 +90,7 @@ const App = () => {
                   userAddress={userAddress}
                   contractAddress={contractAddress}
                   provider={provider}
+                  setAllNFTs={setAllNFTs}
                 />
               }
             />
