@@ -16,6 +16,7 @@ const MyNFTs = ({
   const [connected, setConnected] = useState(false);
   const [sellPrice, setSellPrice] = useState(0);
   const [selectedNFTForSale, setSelectedNFTForSale] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(null);
 
   const resolveIpfsUrl = (ipfsUrl) => {
     if (!ipfsUrl) {
@@ -132,8 +133,10 @@ const MyNFTs = ({
         tokenId,
         ethers.utils.parseEther(sellPrice.toString())
       );
+
       setSelectedNFTForSale(null);
       fetchData();
+      setSuccessMessage("NFT listed for sale successfully!");
     } catch (error) {
       console.error("Error listing NFT for sale:", error.message);
       setError(error.message);
@@ -145,6 +148,7 @@ const MyNFTs = ({
       const contract = new ethers.Contract(contractAddress, ABI, signer);
       await contract.cancelSale(tokenId);
       fetchData();
+      setSuccessMessage("NFT sale canceled successfully!");
     } catch (error) {
       console.error("Error canceling NFT sale:", error.message);
     }
@@ -158,6 +162,15 @@ const MyNFTs = ({
     fetchData();
   }, [fetchData]);
 
+  useEffect(() => {
+    if (successMessage) {
+      const timeout = setTimeout(() => {
+        setSuccessMessage(null);
+      }, 4000);
+      return () => clearTimeout(timeout);
+    }
+  }, [successMessage]);
+
   if (!connected) {
     return <div>Connect your wallet to see your NFTs</div>;
   }
@@ -166,13 +179,13 @@ const MyNFTs = ({
     <div>
       <h2>My NFTs</h2>
       {myNFTs
-        .filter((nft) => nft.owner === userAddress)
+        .filter((nft) => nft.owner.toLowerCase() === userAddress.toLowerCase())
         .map((nft) => (
           <div key={nft.id}>
             <img
               src={resolveIpfsUrl(nft.tokenURI.image)}
               alt={`My NFTs ${nft.id}`}
-              loading="lazy"
+              className="myNFTImage"
             />
             <div>Name: {nft.tokenURI.name}</div>
             <div>Description: {nft.tokenURI.description}</div>
@@ -197,6 +210,7 @@ const MyNFTs = ({
                 <button onClick={() => listNFTForSale(nft.id)}>Sell NFT</button>
               </div>
             )}
+            {successMessage && <div>{successMessage}</div>}
           </div>
         ))}
     </div>

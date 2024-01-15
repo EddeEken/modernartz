@@ -8,10 +8,7 @@ async function saveToNftStorage(data) {
   const NFT_STORAGE_TOKEN =
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkaWQ6ZXRocjoweGZlOTZFMkMxMTgyOTJlOUE4ZDFkNjc3QWVGNWM1Y2RmMTc4YjU3M0QiLCJpc3MiOiJuZnQtc3RvcmFnZSIsImlhdCI6MTcwMzAwMjA4NTg0NywibmFtZSI6IkVkdmluIEVrc3Ryw7ZtIn0.wIXeB8kmwAwwQ6rrcXHW23F-tzFTwsSCM3U53evqPpA";
   const client = new NFTStorage({ token: NFT_STORAGE_TOKEN });
-
-  console.log("Uploading to IPFS...");
   const ipfs = await client.storeBlob(new Blob([data]));
-  console.log("File CID is:", ipfs);
   return `ipfs://${ipfs}`;
 }
 
@@ -56,8 +53,6 @@ const MintNFT = ({ signer, contractAddress, provider, userAddress }) => {
       const metadataCID = await saveToNftStorage(JSON.stringify(metadata));
       const metadataPath = `ipfs://${metadataCID.replace("ipfs://", "")}`;
 
-      console.log("Minting NFT with metadataCID:", metadataPath);
-
       const contract = new ethers.Contract(contractAddress, ABI, signer);
       await contract.mint(metadataPath, userAddress);
 
@@ -93,14 +88,19 @@ const MintNFT = ({ signer, contractAddress, provider, userAddress }) => {
               onChange={(e) => setName(e.target.value)}
             />
           </label>
-          <label>
+          <label className="mintDescription">
             Description:
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
           </label>
-          <button onClick={() => handleMint(userAddress)}>Mint NFT</button>
+          <button
+            className="mintButton"
+            onClick={() => handleMint(userAddress)}
+          >
+            Mint NFT
+          </button>
         </>
       )}
     </div>

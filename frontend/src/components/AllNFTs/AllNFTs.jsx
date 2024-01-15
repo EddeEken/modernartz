@@ -9,6 +9,8 @@ const AllNFTs = ({ contractAddress, signer, provider, userAddress }) => {
   const [error, setError] = useState(null);
   const [connected, setConnected] = useState(false);
   const [buyPrice, setBuyPrice] = useState(0);
+  const [purchaseError, setPurchaseError] = useState(null);
+  const [buySuccessMessage, setBuySuccessMessage] = useState(null);
 
   const resolveIpfsUrl = (ipfsUrl) => {
     if (!ipfsUrl) {
@@ -36,7 +38,6 @@ const AllNFTs = ({ contractAddress, signer, provider, userAddress }) => {
         console.error("Error checking connection:", error.message);
       }
     };
-
     checkConnected();
   }, [provider]);
 
@@ -56,10 +57,11 @@ const AllNFTs = ({ contractAddress, signer, provider, userAddress }) => {
 
       const contract = new ethers.Contract(contractAddress, ABI, signer);
 
-      const nfts = [];
+      const fetchedNFTs = [];
 
-      let i = 0;
-      while (true) {
+      const totalSupply = await contract.getNextTokenId();
+
+      for (let i = 0; i < totalSupply; i++) {
         try {
           const metadataString = await contract.tokenURI(i);
           const metadataUrl = resolveIpfsUrl(metadataString);
@@ -72,7 +74,7 @@ const AllNFTs = ({ contractAddress, signer, provider, userAddress }) => {
           if (isForSale) {
             const price = await contract.nftPrices(i);
 
-            nfts.push({
+            fetchedNFTs.push({
               id: i,
               tokenURI: {
                 name: metadata.name || "Unknown Name",
@@ -83,62 +85,81 @@ const AllNFTs = ({ contractAddress, signer, provider, userAddress }) => {
               price,
             });
           }
-
-          i++;
         } catch (error) {
-          break;
+          console.error(
+            "Error fetching NFT data for token ID",
+            i,
+            ":",
+            error.message
+          );
         }
       }
 
-      console.log("Retrieved NFTs for sale:", nfts);
-      console.log("Setting All NFTs...");
-      setNFTs(nfts);
+      setNFTs(fetchedNFTs);
     } catch (error) {
       setError(error.message);
     }
   }, [contractAddress, signer, provider, userAddress]);
 
-  const buyNFT = async (tokenId, price) => {
+  const buyNFT = async (tokenId) => {
     try {
-      if (!buyPrice || isNaN(buyPrice)) {
-        setError("Please enter a valid price for the NFT.");
+      const contract = new ethers.Contract(contractAddress, ABI, signer);
+
+      const price = await contract.nftPrices(tokenId);
+
+      console.log("Provided Price:", ethers.utils.formatEther(buyPrice));
+      console.log("Actual Price:", ethers.utils.formatEther(price));
+
+      if (!price || isNaN(price)) {
+        setPurchaseError("Error fetching sale price");
         return;
       }
 
-      const contract = new ethers.Contract(contractAddress, ABI, signer);
+      setBuyPrice(price);
+
+      const sellerAddress = await contract.ownerOf(tokenId);
+
+      if (sellerAddress === userAddress) {
+        setPurchaseError("You cannot buy your own NFT.");
+        return;
+      }
 
       if (price.eq(ethers.utils.parseEther(buyPrice.toString()))) {
-        const sellerAddress = await contract.ownerOf(tokenId);
-
-        const sellerContract = new ethers.Contract(
-          contractAddress,
-          ABI,
-          signer
-        );
-
-        const transaction = await signer.sendTransaction({
+        const transaction = await contract.buyNFT({
           to: sellerAddress,
-          value: ethers.utils.parseEther(buyPrice.toString()),
-          gasLimit: 21000,
+          value: price,
+          gasLimit: 20000,
         });
 
         await transaction.wait();
 
-        await sellerContract.transferFrom(userAddress, sellerAddress, tokenId);
-
+        setBuySuccessMessage("NFT bought successfully!");
+        setPurchaseError(null);
         fetchData();
+        console.log("NFT bought successfully!");
       } else {
-        setError("The provided price doesn't match the actual price.");
+        setPurchaseError("The provided price doesn't match the actual price.");
+        console.log("Provided Price:", buyPrice.toString());
+        console.log("Actual Price:", price.toString());
       }
     } catch (error) {
       console.error("Error buying NFT:", error.message);
-      setError(error.message);
+      setPurchaseError("Error buying NFT");
     }
   };
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  useEffect(() => {
+    if (purchaseError) {
+      const timeout = setTimeout(() => {
+        setPurchaseError(null);
+      }, 4000);
+      return () => clearTimeout(timeout);
+    }
+  }, [purchaseError]);
 
   if (!connected) {
     return <div>Connect your wallet to see all NFTs for sale</div>;
@@ -152,13 +173,21 @@ const AllNFTs = ({ contractAddress, signer, provider, userAddress }) => {
           <img
             src={resolveIpfsUrl(nft.tokenURI.image)}
             alt={`My NFTs ${nft.id}`}
-            loading="lazy"
+            className="allNFTImage"
           />
           <div>Name: {nft.tokenURI.name}</div>
           <div>Description: {nft.tokenURI.description}</div>
           <div>
-            <button onClick={() => buyNFT(nft.id, nft.price)}>Buy NFT</button>
+            Price (ETH):{" "}
+            {nft.price ? ethers.utils.formatEther(nft.price) : "Not available"}
           </div>
+          <div>
+            <button onClick={() => buyNFT(nft.id)}>Buy NFT</button>
+          </div>
+          {buySuccessMessage && <div>{buySuccessMessage}</div>}
+          {purchaseError && (
+            <div className="error-message">{purchaseError}</div>
+          )}
         </div>
       ))}
     </div>
