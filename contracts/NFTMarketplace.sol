@@ -32,10 +32,10 @@ contract NFTMarketplace is ERC721, Ownable, IERC721Receiver {
         return metadata;
    }
 
-   function mint(string memory ipfsMetadata, address userAddress) external onlyOwner {
+   function mint(string memory ipfsMetadata) external onlyOwner {
        uint256 tokenId = nextTokenId;
        nftIpfsMetadata[tokenId] = ipfsMetadata;
-       _safeMint(userAddress, tokenId);
+       _safeMint(msg.sender, tokenId);
        nextTokenId++;
    }
 

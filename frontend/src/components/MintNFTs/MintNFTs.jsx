@@ -1,3 +1,4 @@
+/* eslint-disable */
 import React, { useState, useEffect } from "react";
 import { ethers } from "ethers";
 import { NFTStorage, Blob } from "nft.storage";
@@ -17,6 +18,7 @@ const MintNFT = ({ signer, contractAddress, provider, userAddress }) => {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [error, setError] = useState(null);
+  const [successMessage, setSuccessMessage] = useState("");
   const [connected, setConnected] = useState(false);
 
   const handleFileChange = (event) => {
@@ -24,6 +26,9 @@ const MintNFT = ({ signer, contractAddress, provider, userAddress }) => {
   };
 
   const handleMint = async () => {
+    setError(null);
+    setSuccessMessage("");
+
     if (!file || !name || !description) {
       setError("Please fill in all fields");
       return;
@@ -54,12 +59,11 @@ const MintNFT = ({ signer, contractAddress, provider, userAddress }) => {
       const metadataPath = `ipfs://${metadataCID.replace("ipfs://", "")}`;
 
       const contract = new ethers.Contract(contractAddress, ABI, signer);
-      await contract.mint(metadataPath, userAddress);
+      await contract.mint(metadataPath);
 
-      alert("NFT minted successfully!");
+      setSuccessMessage("NFT minted successfully!");
     } catch (error) {
       setError(`Error minting NFT: ${error.message}`);
-      alert("Error minting NFT. Please try again.");
     }
   };
 
@@ -72,7 +76,6 @@ const MintNFT = ({ signer, contractAddress, provider, userAddress }) => {
   return (
     <div>
       {!connected && <div>Connect your wallet to mint NFT</div>}
-      {error && <div>Error: {error}</div>}
       {connected && (
         <>
           <h1>Mint NFT</h1>
@@ -101,6 +104,10 @@ const MintNFT = ({ signer, contractAddress, provider, userAddress }) => {
           >
             Mint NFT
           </button>
+          {error && <div className="error-message">Error: {error}</div>}
+          {successMessage && (
+            <div className="success-message">{successMessage}</div>
+          )}
         </>
       )}
     </div>

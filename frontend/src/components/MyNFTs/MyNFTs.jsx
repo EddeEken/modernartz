@@ -27,7 +27,7 @@ const MyNFTs = ({
 
     if (isIpfsUri) {
       const cid = ipfsUrl.replace("ipfs://", "");
-      const gatewayUrl = "https://ipfs.io/ipfs/";
+      const gatewayUrl = "https://nftstorage.link/ipfs/";
       return `${gatewayUrl}${cid}`;
     } else {
       return ipfsUrl;
@@ -65,7 +65,7 @@ const MyNFTs = ({
       const contract = new ethers.Contract(contractAddress, ABI, signer);
 
       const totalSupply = await contract.getNextTokenId();
-      const nfts = [];
+      const nfts = [...myNFTs];
       const allNfts = [];
 
       for (let i = 0; i < totalSupply; i++) {
@@ -123,8 +123,14 @@ const MyNFTs = ({
 
   const listNFTForSale = async (tokenId) => {
     try {
-      if (!sellPrice || isNaN(sellPrice)) {
-        setError("Please enter a valid price for the NFT.");
+      if (
+        !sellPrice[tokenId] ||
+        isNaN(sellPrice[tokenId]) ||
+        sellPrice[tokenId] <= 0
+      ) {
+        setError({
+          [tokenId]: "Please enter a valid price greater than 0 for the NFT.",
+        });
         return;
       }
 
@@ -151,6 +157,7 @@ const MyNFTs = ({
       setSuccessMessage("NFT sale canceled successfully!");
     } catch (error) {
       console.error("Error canceling NFT sale:", error.message);
+      setError(error.message);
     }
   };
 
@@ -198,6 +205,9 @@ const MyNFTs = ({
                     : "Not available"}
                 </div>
                 <button onClick={() => cancelSale(nft.id)}>Cancel Sale</button>
+                {error && nft.id === selectedNFTForSale && (
+                  <div className="error">{error}</div>
+                )}
               </div>
             ) : (
               <div>
@@ -208,6 +218,9 @@ const MyNFTs = ({
                   onChange={handleInputChange}
                 />
                 <button onClick={() => listNFTForSale(nft.id)}>Sell NFT</button>
+                {error && nft.id === selectedNFTForSale && (
+                  <div className="error">{error}</div>
+                )}
               </div>
             )}
             {successMessage && <div>{successMessage}</div>}

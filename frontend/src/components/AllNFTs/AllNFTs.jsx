@@ -10,6 +10,7 @@ const AllNFTs = ({ contractAddress, signer, provider, userAddress }) => {
   const [connected, setConnected] = useState(false);
   const [buyPrice, setBuyPrice] = useState(0);
   const [purchaseError, setPurchaseError] = useState(null);
+  const [isFetchingPrice, setIsFetchingPrice] = useState(false);
   const [buySuccessMessage, setBuySuccessMessage] = useState(null);
 
   const resolveIpfsUrl = (ipfsUrl) => {
@@ -21,12 +22,19 @@ const AllNFTs = ({ contractAddress, signer, provider, userAddress }) => {
 
     if (isIpfsUri) {
       const cid = ipfsUrl.replace("ipfs://", "");
-      const gatewayUrl = "https://ipfs.io/ipfs/";
+      const gatewayUrl = "https://nftstorage.link/ipfs/";
       return `${gatewayUrl}${cid}`;
     } else {
       return ipfsUrl;
     }
   };
+
+  useEffect(() => {
+    console.log(
+      "buyPrice state has changed:",
+      ethers.utils.formatEther(buyPrice)
+    );
+  }, [buyPrice]);
 
   useEffect(() => {
     const checkConnected = async () => {
@@ -105,46 +113,42 @@ const AllNFTs = ({ contractAddress, signer, provider, userAddress }) => {
     try {
       const contract = new ethers.Contract(contractAddress, ABI, signer);
 
-      const price = await contract.nftPrices(tokenId);
+      const actualPrice = await contract.nftPrices(tokenId);
+
+      setBuyPrice(actualPrice);
 
       console.log("Provided Price:", ethers.utils.formatEther(buyPrice));
-      console.log("Actual Price:", ethers.utils.formatEther(price));
+      console.log("Actual Price:", ethers.utils.formatEther(actualPrice));
 
-      if (!price || isNaN(price)) {
-        setPurchaseError("Error fetching sale price");
+      if (!ethers.BigNumber.from(buyPrice).eq(actualPrice)) {
+        setIsFetchingPrice(true);
+        console.log("Provided Price:", ethers.utils.formatEther(buyPrice));
+        console.log("Actual Price:", ethers.utils.formatEther(actualPrice));
         return;
       }
 
-      setBuyPrice(price);
-
       const sellerAddress = await contract.ownerOf(tokenId);
-
-      if (sellerAddress === userAddress) {
+      if (sellerAddress.toLowerCase() === userAddress.toLowerCase()) {
+        setIsFetchingPrice(false);
         setPurchaseError("You cannot buy your own NFT.");
         return;
       }
 
-      if (price.eq(ethers.utils.parseEther(buyPrice.toString()))) {
-        const transaction = await contract.buyNFT({
-          to: sellerAddress,
-          value: price,
-          gasLimit: 20000,
-        });
+      const transaction = await contract.buyNFT(tokenId, {
+        value: actualPrice,
+      });
 
-        await transaction.wait();
+      await transaction.wait();
 
-        setBuySuccessMessage("NFT bought successfully!");
-        setPurchaseError(null);
-        fetchData();
-        console.log("NFT bought successfully!");
-      } else {
-        setPurchaseError("The provided price doesn't match the actual price.");
-        console.log("Provided Price:", buyPrice.toString());
-        console.log("Actual Price:", price.toString());
-      }
+      fetchData();
+      setBuySuccessMessage("NFT bought successfully!");
+      setPurchaseError(null);
+      setIsFetchingPrice(false);
+      console.log("NFT bought successfully!");
     } catch (error) {
       console.error("Error buying NFT:", error.message);
       setPurchaseError("Error buying NFT");
+      setIsFetchingPrice(false);
     }
   };
 
@@ -156,7 +160,7 @@ const AllNFTs = ({ contractAddress, signer, provider, userAddress }) => {
     if (purchaseError) {
       const timeout = setTimeout(() => {
         setPurchaseError(null);
-      }, 4000);
+      }, 2000);
       return () => clearTimeout(timeout);
     }
   }, [purchaseError]);
@@ -183,6 +187,7 @@ const AllNFTs = ({ contractAddress, signer, provider, userAddress }) => {
           </div>
           <div>
             <button onClick={() => buyNFT(nft.id)}>Buy NFT</button>
+            {isFetchingPrice && <p>Fetching price...</p>}
           </div>
           {buySuccessMessage && <div>{buySuccessMessage}</div>}
           {purchaseError && (

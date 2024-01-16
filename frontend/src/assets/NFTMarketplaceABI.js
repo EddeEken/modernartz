@@ -399,25 +399,6 @@ export const ABI = [
   {
     inputs: [
       {
-        internalType: "uint256",
-        name: "tokenId",
-        type: "uint256",
-      },
-    ],
-    name: "getSalePrice",
-    outputs: [
-      {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
         internalType: "address",
         name: "owner",
         type: "address",
@@ -495,11 +476,6 @@ export const ABI = [
         internalType: "string",
         name: "ipfsMetadata",
         type: "string",
-      },
-      {
-        internalType: "address",
-        name: "userAddress",
-        type: "address",
       },
     ],
     name: "mint",
