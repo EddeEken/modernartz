@@ -143,7 +143,7 @@ const AllNFTs = ({ contractAddress, signer, provider, userAddress }) => {
     if (Object.keys(purchaseErrors).length > 0) {
       const timeout = setTimeout(() => {
         setPurchaseErrors({});
-      }, 2500);
+      }, 4000);
       return () => clearTimeout(timeout);
     }
   }, [purchaseErrors, currentTokenId]);
@@ -152,7 +152,7 @@ const AllNFTs = ({ contractAddress, signer, provider, userAddress }) => {
     if (buySuccessMessage) {
       const timeout = setTimeout(() => {
         setBuySuccessMessage(null);
-      }, 2500);
+      }, 4000);
       return () => clearTimeout(timeout);
     }
   }, [buySuccessMessage]);
