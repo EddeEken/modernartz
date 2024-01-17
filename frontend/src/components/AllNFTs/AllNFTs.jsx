@@ -6,12 +6,13 @@ import "./AllNFTs.css";
 
 const AllNFTs = ({ contractAddress, signer, provider, userAddress }) => {
   const [nfts, setNFTs] = useState([]);
-  const [error, setError] = useState(null);
+  const [errors, setErrors] = useState({});
   const [connected, setConnected] = useState(false);
-  const [buyPrice, setBuyPrice] = useState(0);
-  const [purchaseError, setPurchaseError] = useState(null);
-  const [isFetchingPrice, setIsFetchingPrice] = useState(false);
-  const [buySuccessMessage, setBuySuccessMessage] = useState(null);
+  const [buyPrices, setBuyPrices] = useState({});
+  const [isFetchingPrices, setIsFetchingPrices] = useState({});
+  const [buySuccessMessage, setBuySuccessMessage] = useState({});
+  const [purchaseErrors, setPurchaseErrors] = useState({});
+  const [currentTokenId, setCurrentTokenId] = useState(null);
 
   const resolveIpfsUrl = (ipfsUrl) => {
     if (!ipfsUrl) {
@@ -30,13 +31,6 @@ const AllNFTs = ({ contractAddress, signer, provider, userAddress }) => {
   };
 
   useEffect(() => {
-    console.log(
-      "buyPrice state has changed:",
-      ethers.utils.formatEther(buyPrice)
-    );
-  }, [buyPrice]);
-
-  useEffect(() => {
     const checkConnected = async () => {
       try {
         if (provider && provider.getSigner()) {
@@ -52,12 +46,12 @@ const AllNFTs = ({ contractAddress, signer, provider, userAddress }) => {
   const fetchData = useCallback(async () => {
     try {
       if (!provider) {
-        setError("Provider is undefined");
+        setErrors({ general: "Provider is undefined" });
         return;
       }
 
       if (!provider.getSigner()) {
-        setError("Not connected to a wallet");
+        setErrors({ general: "Not connected to a wallet" });
         return;
       }
 
@@ -104,33 +98,48 @@ const AllNFTs = ({ contractAddress, signer, provider, userAddress }) => {
       }
 
       setNFTs(fetchedNFTs);
+      setErrors({});
     } catch (error) {
-      setError(error.message);
+      setErrors({ general: error.message });
     }
   }, [contractAddress, signer, provider, userAddress]);
 
   const buyNFT = async (tokenId) => {
     try {
+      setCurrentTokenId(tokenId);
+
       const contract = new ethers.Contract(contractAddress, ABI, signer);
 
       const actualPrice = await contract.nftPrices(tokenId);
 
-      setBuyPrice(actualPrice);
+      setBuyPrices((prevBuyPrices) => ({
+        ...prevBuyPrices,
+        [tokenId]: actualPrice,
+      }));
 
-      console.log("Provided Price:", ethers.utils.formatEther(buyPrice));
-      console.log("Actual Price:", ethers.utils.formatEther(actualPrice));
+      setIsFetchingPrices((prevIsFetchingPrices) => ({
+        ...prevIsFetchingPrices,
+        [tokenId]: true,
+      }));
 
-      if (!ethers.BigNumber.from(buyPrice).eq(actualPrice)) {
-        setIsFetchingPrice(true);
-        console.log("Provided Price:", ethers.utils.formatEther(buyPrice));
-        console.log("Actual Price:", ethers.utils.formatEther(actualPrice));
+      if (ethers.BigNumber.from(buyPrices?.[tokenId] || 0).eq(actualPrice)) {
+        setIsFetchingPrices((prevIsFetchingPrices) => ({
+          ...prevIsFetchingPrices,
+          [tokenId]: false,
+        }));
+        setPurchaseErrors({
+          [tokenId]: "Price mismatch. Please try again.",
+        });
         return;
       }
 
       const sellerAddress = await contract.ownerOf(tokenId);
       if (sellerAddress.toLowerCase() === userAddress.toLowerCase()) {
-        setIsFetchingPrice(false);
-        setPurchaseError("You cannot buy your own NFT.");
+        setIsFetchingPrices((prevIsFetchingPrices) => ({
+          ...prevIsFetchingPrices,
+          [tokenId]: false,
+        }));
+        setPurchaseErrors({ [tokenId]: "You cannot buy your own NFT." });
         return;
       }
 
@@ -141,14 +150,19 @@ const AllNFTs = ({ contractAddress, signer, provider, userAddress }) => {
       await transaction.wait();
 
       fetchData();
-      setBuySuccessMessage("NFT bought successfully!");
-      setPurchaseError(null);
-      setIsFetchingPrice(false);
-      console.log("NFT bought successfully!");
+      setBuySuccessMessage({ [tokenId]: "NFT bought successfully!" });
+      setPurchaseErrors({});
+      setIsFetchingPrices((prevIsFetchingPrices) => ({
+        ...prevIsFetchingPrices,
+        [tokenId]: false,
+      }));
     } catch (error) {
       console.error("Error buying NFT:", error.message);
-      setPurchaseError("Error buying NFT");
-      setIsFetchingPrice(false);
+      setPurchaseErrors({ [tokenId]: "Error buying NFT" });
+      setIsFetchingPrices((prevIsFetchingPrices) => ({
+        ...prevIsFetchingPrices,
+        [tokenId]: false,
+      }));
     }
   };
 
@@ -157,14 +171,31 @@ const AllNFTs = ({ contractAddress, signer, provider, userAddress }) => {
   }, [fetchData]);
 
   useEffect(() => {
-    if (purchaseError) {
+    if (Object.keys(purchaseErrors).length > 0) {
       const timeout = setTimeout(() => {
-        setPurchaseError(null);
-      }, 2000);
+        setPurchaseErrors({});
+      }, 2500);
       return () => clearTimeout(timeout);
     }
-  }, [purchaseError]);
+  }, [purchaseErrors, currentTokenId]);
 
+  useEffect(() => {
+    if (buySuccessMessage[currentTokenId]) {
+      const timeout = setTimeout(() => {
+        setBuySuccessMessage({});
+      }, 2500);
+      return () => clearTimeout(timeout);
+    }
+  }, [buySuccessMessage, currentTokenId]);
+
+  useEffect(() => {
+    if (Object.keys(isFetchingPrices).length > 0) {
+      const timeout = setTimeout(() => {
+        setIsFetchingPrices({});
+      }, 1500);
+      return () => clearTimeout(timeout);
+    }
+  }, [isFetchingPrices]);
   if (!connected) {
     return <div>Connect your wallet to see all NFTs for sale</div>;
   }
@@ -187,11 +218,15 @@ const AllNFTs = ({ contractAddress, signer, provider, userAddress }) => {
           </div>
           <div>
             <button onClick={() => buyNFT(nft.id)}>Buy NFT</button>
-            {isFetchingPrice && <p>Fetching price...</p>}
+            {isFetchingPrices[nft.id] && <p>Fetching price...</p>}
           </div>
-          {buySuccessMessage && <div>{buySuccessMessage}</div>}
-          {purchaseError && (
-            <div className="error-message">{purchaseError}</div>
+          {buySuccessMessage[currentTokenId] && (
+            <div>{buySuccessMessage[currentTokenId]}</div>
+          )}
+          {purchaseErrors[currentTokenId] && (
+            <div className="error-message">
+              {purchaseErrors[currentTokenId]}
+            </div>
           )}
         </div>
       ))}

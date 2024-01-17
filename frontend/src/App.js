@@ -12,7 +12,7 @@ const App = () => {
   const [signer, setSigner] = useState(null);
   const [userAddress, setUserAddress] = useState(null);
   const [contractAddress, setContractAddress] = useState(
-    "0x879D7912002345C3AA15ad488717554341aF01Cc"
+    "0x703160a7344ABEe391fC5a18b470dD9831301605"
   );
   const [provider, setProvider] = useState(null);
   const [allNFTs, setAllNFTs] = useState([]);

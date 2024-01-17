@@ -12,11 +12,11 @@ const MyNFTs = ({
   setAllNFTs,
 }) => {
   const [myNFTs, setMyNFTs] = useState([]);
-  const [error, setError] = useState(null);
+  const [errors, setErrors] = useState({});
   const [connected, setConnected] = useState(false);
-  const [sellPrice, setSellPrice] = useState(0);
+  const [sellPrices, setSellPrices] = useState({});
   const [selectedNFTForSale, setSelectedNFTForSale] = useState(null);
-  const [successMessage, setSuccessMessage] = useState(null);
+  const [successMessages, setSuccessMessages] = useState({});
 
   const resolveIpfsUrl = (ipfsUrl) => {
     if (!ipfsUrl) {
@@ -51,12 +51,12 @@ const MyNFTs = ({
   const fetchData = useCallback(async () => {
     try {
       if (!provider) {
-        setError("Provider is undefined");
+        setErrors({ general: "Provider is undefined" });
         return;
       }
 
       if (!provider.getSigner()) {
-        setError("Not connected to a wallet");
+        setErrors({ general: "Not connected to a wallet" });
         return;
       }
 
@@ -115,20 +115,21 @@ const MyNFTs = ({
 
       setMyNFTs(nfts);
       setAllNFTs(allNfts);
+      setErrors({});
     } catch (error) {
       console.error("Error fetching data:", error.message);
-      setError(error.message);
+      setErrors({ general: error.message });
     }
-  }, [contractAddress, signer, provider, userAddress]);
+  }, [contractAddress, signer, provider, userAddress, setAllNFTs]);
 
   const listNFTForSale = async (tokenId) => {
     try {
       if (
-        !sellPrice[tokenId] ||
-        isNaN(sellPrice[tokenId]) ||
-        sellPrice[tokenId] <= 0
+        !sellPrices[tokenId] ||
+        isNaN(sellPrices[tokenId]) ||
+        sellPrices[tokenId] <= 0
       ) {
-        setError({
+        setErrors({
           [tokenId]: "Please enter a valid price greater than 0 for the NFT.",
         });
         return;
@@ -137,15 +138,15 @@ const MyNFTs = ({
       const contract = new ethers.Contract(contractAddress, ABI, signer);
       await contract.listNFT(
         tokenId,
-        ethers.utils.parseEther(sellPrice.toString())
+        ethers.utils.parseEther(sellPrices[tokenId].toString())
       );
 
       setSelectedNFTForSale(null);
       fetchData();
-      setSuccessMessage("NFT listed for sale successfully!");
+      setSuccessMessages({ [tokenId]: "NFT listed for sale successfully!" });
     } catch (error) {
       console.error("Error listing NFT for sale:", error.message);
-      setError(error.message);
+      setErrors({ [tokenId]: error.message });
     }
   };
 
@@ -154,15 +155,20 @@ const MyNFTs = ({
       const contract = new ethers.Contract(contractAddress, ABI, signer);
       await contract.cancelSale(tokenId);
       fetchData();
-      setSuccessMessage("NFT sale canceled successfully!");
+      setSuccessMessages({ [tokenId]: "NFT sale canceled successfully!" });
     } catch (error) {
       console.error("Error canceling NFT sale:", error.message);
-      setError(error.message);
+      setErrors({ [tokenId]: error.message });
     }
   };
 
-  const handleInputChange = (e) => {
-    setSellPrice(e.target.value);
+  const handleInputChange = (e, tokenId) => {
+    const inputValue = e.target.value;
+
+    setSellPrices((prevSellPrices) => ({
+      ...prevSellPrices,
+      [tokenId]: inputValue,
+    }));
   };
 
   useEffect(() => {
@@ -170,13 +176,13 @@ const MyNFTs = ({
   }, [fetchData]);
 
   useEffect(() => {
-    if (successMessage) {
+    if (Object.keys(successMessages).length > 0) {
       const timeout = setTimeout(() => {
-        setSuccessMessage(null);
-      }, 4000);
+        setSuccessMessages({});
+      }, 3000);
       return () => clearTimeout(timeout);
     }
-  }, [successMessage]);
+  }, [successMessages]);
 
   if (!connected) {
     return <div>Connect your wallet to see your NFTs</div>;
@@ -205,8 +211,8 @@ const MyNFTs = ({
                     : "Not available"}
                 </div>
                 <button onClick={() => cancelSale(nft.id)}>Cancel Sale</button>
-                {error && nft.id === selectedNFTForSale && (
-                  <div className="error">{error}</div>
+                {errors[nft.id] && (
+                  <div className="error">{errors[nft.id]}</div>
                 )}
               </div>
             ) : (
@@ -214,16 +220,18 @@ const MyNFTs = ({
                 <input
                   type="number"
                   placeholder="Enter price in ETH"
-                  value={sellPrice}
-                  onChange={handleInputChange}
+                  value={sellPrices[nft.id] || ""}
+                  onChange={(e) => handleInputChange(e, nft.id)}
                 />
                 <button onClick={() => listNFTForSale(nft.id)}>Sell NFT</button>
-                {error && nft.id === selectedNFTForSale && (
-                  <div className="error">{error}</div>
+                {errors[nft.id] && (
+                  <div className="error">{errors[nft.id]}</div>
                 )}
               </div>
             )}
-            {successMessage && <div>{successMessage}</div>}
+            {successMessages[nft.id] && (
+              <div className="success-message">{successMessages[nft.id]}</div>
+            )}
           </div>
         ))}
     </div>
