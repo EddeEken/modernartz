@@ -179,7 +179,7 @@ const MyNFTs = ({
     if (Object.keys(successMessages).length > 0) {
       const timeout = setTimeout(() => {
         setSuccessMessages({});
-      }, 3000);
+      }, 4000);
       return () => clearTimeout(timeout);
     }
   }, [successMessages]);
